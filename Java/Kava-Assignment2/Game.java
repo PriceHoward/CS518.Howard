@@ -8,7 +8,7 @@ public class Game {
     Integer frameNumber = 0;
     Integer rollNumber = 1;
 
-    // Trys to locate previous frame object in the map. If not found makes a new one.
+    // Tries to locate previous frame object in the map. If not found makes a new one.
     Frame CreateandGetFrameObject() {
         Frame newFrame;
         newFrame = FrameScore.get(frameNumber);
