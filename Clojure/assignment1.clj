@@ -1,0 +1,4 @@
+(defn member-twice? [number numberList]
+  (> (count(filter #(= number %) numberList)) 1))
+
+(println(member-twice? 10 '(1 2 3 4 5 6 7 10 9 10 11 43)))
