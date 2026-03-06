@@ -1,0 +1,106 @@
+S: Single Responsibility states that a class or a function should only have a purpose or job to do and should not do more than that. For example, If we had a class for a light switch. It is only responsible for maintaining a boolean of on or off. If this light switch also controlled items such as replacing the bulb then it would break the Single Responsibility principle, as now it is doing more than just the one purpose of changing the boolean state of on and off.
+
+O: Open/Closed Principle states that any kind of class, function, modules or anything similar should be able to be extended from but not be able to be modified. We can restate this as it should be OPEN for extension but CLOSED for modification. A good example of this is a class for calculating the area of a shape. We have a basic class called shape:
+class Shape
+{
+    public:
+        virtual double area(double height, double width) const = 0;
+};
+
+Then we have classes that extend this:
+
+class Square : public Shape
+{
+    private:
+        double height;
+        double width;
+    public:
+        Square(double h, double w) : height(h), width(w) {}
+        double area const override 
+        {
+            return height*width;
+        }
+};
+
+This is an example of the Open/Closed principle as Square extends shape but does not change what shape contains or does.
+
+L: Liskov's Substitution Principle states that a derrived class must be able to completely substitute for their base class. A unique example of this could be birds.
+Example:
+
+class Bird 
+{
+public:
+    virtual std::string move() = 0;
+};
+
+class Pigeon : public Bird 
+{
+public:
+    std::string move() override 
+    {
+        return "fly"; 
+    }
+};
+
+class Penguin : public Bird 
+{
+public:
+    std::string move() override 
+    { 
+        return "swim"; 
+    }
+}
+
+This works as for each bird we can completely use the original bird class functions for each which is a way of completely substituting the main class for the derrived class.
+Penguins cannot fly so they move with swimming while pigeons do fly so we have two different move types with the same base class. Both can completely substatute the original base class.
+
+
+I: Interface Segregration Principle states that no client should be forced to depenf on methods it does not use.  For instance in the example:
+of the machine, printers, and scanners.a printer doesn't need scanning functionality, and a scanner doesn't need printing functionality. 
+Rather than bundling everything into one bloated interface, we define separate interfaces for each. 
+A full machine can then implement both, while a standalone printer or scanner only implements what's relevant to it.
+
+D: Dependancy Inversion states that Abstractions should not depend upon details and details should depend on abstractions. We can see this in the example:
+
+class Messanger{
+    public:
+        virtual void send(const std::string& msg) = 0;
+};
+
+class EmailMessanger : public Messanger {
+public:
+    void send(const std::string& msg) override {
+        std::cout << "Email: " << msg << "\n";
+    }
+};
+
+class TextMessanger : public Messanger {
+public:
+    void send(const std::string& msg) override {
+        std::cout << "Text: " << msg << "\n";
+    }
+};
+
+class MessangingApplication {
+    private:
+        Messanger& message;
+    public:
+        MessangingApplication(Messanger& m) : message(m) {}
+        void sendMessage() 
+        {
+            message.send("Hello!");
+        }
+}
+
+int main(){
+    EmailMessenger email;
+    MessagingApplication emailApp(email);
+    emailApp.sendMessage();
+
+    TextMessenger text;
+    MessagingApplication textApp(text);
+    textApp.sendMessage();
+}
+
+In this example, Messanger is the abstraction. It defines a send which is a contract. This can be used by the "details" which are the
+TextMessanger and the EmailMessanger. Depending on which class is passed in through the MessagingApplication.
