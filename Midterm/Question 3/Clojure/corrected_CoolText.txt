@@ -1,0 +1,23 @@
+1: Four score and seven years ago our fathers brought forth on this continent,
+2: a new nation, conceived in Liberty, and dedicated to the proposition
+3: that all men are created equal.
+4: Now we are engaged in a great civil war, testing whether that nation,
+5: or any nation so conceived and so dedicated, can long endure.
+6: We are met on a great battle-field of that war.
+7: We have come to dedicate a portion of that field,
+8: as a final resting place for those who here gave their lives
+9: that that nation might live.
+10: It is altogether fitting and proper that we should do this.
+11: But, in a larger sense, we can not dedicate,
+12: we can not consecrate,
+13: we can not hallow this ground.
+14: The brave men, living and dead, who struggled here,
+15: have consecrated it, far above our poor power to add or detract.
+16: The world will little note, nor long remember what we say here,
+17: but it can never forget what they did here.
+18: It is for us the living, rather, to be dedicated here
+19: to the unfinished work which they who fought here
+20: have thus far so nobly advanced.
+21: It is rather for us to be here dedicated
+22: to the great task remaining before us,
+23: that
