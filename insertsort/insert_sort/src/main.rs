@@ -1,62 +1,129 @@
-enum SortingEffects{
-    SaveIndexElement(usize),
-    Compare(usize, usize),
-    Move(usize, usize),
-    PlaceIndexElement(usize, i32),
+use std::cell::RefCell;
+use std::rc::Rc;
+
+struct ST<S, A> {
+    run: Box<dyn FnOnce(S) -> (A, S)>,
 }
 
-fn insertion_sort_pure(arr: &[i32]) -> Vec<SortingEffects> {
-    let mut effects = Vec::new();
-
-    for i in 1..arr.len()
-    {
-        effects.push(SortingEffects::SaveIndexElement(i));
-        let index_element = arr[i];
-        let mut j = i;
-
-        while j > 0{
-        effects.push(SortingEffects::Compare(j-1, i));
-        if arr[j-1] > index_element {
-            effects.push(SortingEffects::Move(j-1, j));
-            j -= 1;
-        }else{
-            break;
+impl<S: 'static, A: 'static> ST<S, A> {
+    fn pure(a: A) -> ST<S, A> {
+        ST {
+            run: Box::new(move |s| (a, s)),
         }
     }
-        effects.push(SortingEffects::PlaceIndexElement(j, index_element));
+    fn lift(f: impl (FnOnce(S) -> (A, S)) + 'static) -> ST<S, A> {
+        ST { run: Box::new(f) }
     }
-    effects
+    fn flat_map<B: 'static>(self, f: impl (FnOnce(A) -> ST<S, B>) + 'static) -> ST<S, B> {
+        ST {
+            run: Box::new(move |s| {
+                let (a, s1) = (self.run)(s);
+                (f(a).run)(s1)
+            }),
+        }
+    }
 }
 
-
-fn insertion_sort_impure(arr: &mut Vec<i32>, effects: Vec<SortingEffects>) {
-    for effect in effects {
-        match effect {
-            SortingEffects::SaveIndexElement(i) => {
-                println!("Saving Element {} at index {}.", arr[i], i);
-            }
-            SortingEffects::Move(minus, j) => {
-                arr[j] = arr[minus];
-            }
-            SortingEffects::PlaceIndexElement(j, index_element) => {
-                arr[j] = index_element;
-            }
-            SortingEffects::Compare(index_one, index_two) => {
-                println!("Comparing index {} vs index {}.", index_one, index_two);
-            }
-        }   
-    }   
+impl<S, A: Clone> Clone for STArray<S, A> {
+    fn clone(&self) -> Self {
+        STArray {
+            value: Rc::clone(&self.value),
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+struct STArray<S, A> {
+    value: Rc<RefCell<Vec<A>>>,
+    _marker: std::marker::PhantomData<S>,
 }
 
+impl<S: 'static, A: Clone + 'static> STArray<S, A> {
+    fn from_vec(xs: Vec<A>) -> ST<S, STArray<S, A>> {
+        ST::pure(STArray {
+            value: Rc::new(RefCell::new(xs)),
+            _marker: std::marker::PhantomData,
+        })
+    }
 
-fn insertion_sort_io(arr: &mut Vec<i32>) {
-    let effects = insertion_sort_pure(arr);           
-    insertion_sort_impure(arr, effects);                          
+    fn size(&self) -> ST<S, usize> {
+        let value = Rc::clone(&self.value);
+        ST::lift(move |s| (value.borrow().len(), s))
+    }
+
+    fn write(&self, i: usize, a: A) -> ST<S, ()> {
+        let value = Rc::clone(&self.value);
+        ST::lift(move |s| {
+            value.borrow_mut()[i] = a;
+            ((), s)
+        })
+    }
+
+    fn read(&self, i: usize) -> ST<S, A> {
+        let value = Rc::clone(&self.value);
+        ST::lift(move |s| (value.borrow()[i].clone(), s))
+    }
+
+    fn freeze(&self) -> ST<S, Vec<A>> {
+        let value = Rc::clone(&self.value);
+        ST::lift(move |s| (value.borrow().clone(), s))
+    }
 }
 
+fn run_st<A>(program: impl FnOnce() -> ST<(), A>) -> A {
+    let (result, _) = (program().run)(());
+    result
+}
 
-fn main(){
-    let mut arr = vec![99, 18, 22, 6, 75, 5, 4, 11, 89, 1];
+fn insertion_sort_st<S: 'static>(arr: STArray<S, i32>) -> ST<S, ()> {
+    arr.size().flat_map(move |n| {
+        (1..n).fold(ST::pure(()), move |acc, i| {
+            let arr = arr.clone();
+            acc.flat_map(move |_| {
+                arr.read(i).flat_map(move |index_element| {
+                    inner_loop(arr.clone(), i, i, index_element)
+                })
+            })
+        })
+    })
+}
 
-    insertion_sort_io(&mut arr);
+fn inner_loop<S: 'static>(
+    arr: STArray<S, i32>,
+    i: usize,
+    j: usize,
+    index_element: i32
+) -> ST<S, ()> {
+    if j == 0 {
+        arr.write(j, index_element)
+    } else {
+        let arr_clone = arr.clone();
+        arr.read(j - 1).flat_map(move |prev_element| {
+            if prev_element > index_element {
+                arr_clone
+                    .write(j, prev_element)
+                    .flat_map(move |_| { inner_loop(arr_clone, i, j - 1, index_element) })
+            } else {
+                arr_clone.write(j, index_element)
+            }
+        })
+    }
+}
+
+fn insertion_sort_pure(xs: &[i32]) -> Vec<i32> {
+    if xs.is_empty() {
+        return Vec::new();
+    }
+    run_st(|| {
+        STArray::from_vec(xs.to_vec()).flat_map(|arr| {
+            let arr_clone = arr.clone();
+            insertion_sort_st(arr).flat_map(move |_| arr_clone.freeze())
+        })
+    })
+}
+
+fn main() {
+    let arr = vec![99, 18, 22, 6, 75, 5, 4, 11, 89, 1];
+    println!("Before the sort: {:?}", arr);
+    let sorted = insertion_sort_pure(&arr);
+    println!("After the sort:  {:?}", sorted);
 }
