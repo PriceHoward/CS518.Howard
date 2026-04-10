@@ -1,0 +1,49 @@
+Problem 1:
+The DIP states higher level modules should not depend on lower level modules. In this clojure example we say that this is broken 
+because the higher level game-running function is reliant on the lower level user input, ai, and display capabilities. Instead it should rely on
+abstractions such as a renderer function for the board, or a player function that can make the player move.
+
+Problem 2:
+In the sense of the algebraic data type, this way is the better approach if and only of you have have the same functionality for each varient.
+For instance here we have the circle and the square. Both are doing area. If we add in traingle and add in area for it we have to update everywhere that ADT 
+is used. If we have multiple match statements for multiple operations such as area, perimeter, etc. This can get very large.
+If we use the other approach the OO appraoch we can see that it is alot easier to add in new objects like all of the different types of shapes.
+but when it comes to the methods it is more tedious to add them in. As each object has its own area function, we cannot reuse the same function with just a match for the shapes
+this makes it more difficult for creating new objects and also can create messy code at the same time.
+
+Problem 3:
+DFD is uploaded as a PNG in here.
+Rust Program is in this folder as well. Rust program is one from the lecture that was in the notes. The wording of the question confused me. If this is not correct please let me know ASAP and I will fix it with a correct version.
+
+Problem 4:
+In looking at this program it does have good SOLID principles to it. But when we come into a functional programing domain we see that there are a few 
+hidden issues in regards to the effects and mutability of this program. The first example of a hidden effect of this program is the call to self.repo.get_name(id).
+When we think of functional programming we want functions that given a single input it will always return the same output. In this case we cannot always say this is true.
+As we do not know if the get_name function in this case will always return the same with a given ID. If this is calling into a DB or an API or even just a class member.
+We can not for certain say it will return the same due to changes in the DB, not connecting to the API, etc etc.
+In the since of mutablility we have the &self. In rust this is saying hey there is no mutation here. But deep down there could be underlying mutation to the user service/repo.
+This can be hidden behind a mutex or an Arc deeper down. When we think about this for functional we want to remove any ability to manipulate the data and just be able to read only on the data.
+
+
+Problem 5:
+The issue here with the more functional rewrite is we still have an fucntion that is being passed in that could be impure and 
+thus give us responses that could lead to incorrect returns in the get_name the whole function of greeting is also still tightly coupled with and relies on the get_name function.
+
+The fix would be to split these up to where greeting is pure and only needs to take in data ad return data. No extra function calls to access said data.
+
+fn greeting(name: Option<&str>) -> String {
+    match name{
+        Some(name) => format!("Hello, {}!", name),
+        None => "Hello, stranger!".to_string(),
+    }
+}
+
+fn greet_user(id: u64) -> String {
+    let name = get_name(id);
+    greeting(name.as_deref())
+}
+
+fn get_name(id: u64) -> Option<String> {
+    // Do whatever you need to get the name.
+    return name;
+}
